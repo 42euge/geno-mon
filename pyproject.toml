@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "geno-mon"
+version = "0.1.0"
+description = "Agent observability — insight into agentic harnesses"
+requires-python = ">=3.10"
+dependencies = ["click>=8.0"]
+
+[project.scripts]
+geno-mon = "geno_mon.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["geno_mon*"]
