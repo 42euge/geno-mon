@@ -31,3 +31,6 @@ Thumbs.db
 *.csv
 *.jsonl
 data/raw/
+
+# mkdocs build output
+site/

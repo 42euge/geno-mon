@@ -1,13 +1,4 @@
----
-layout: default
-title: User Guide
----
-
 # User Guide
-
-[Home](.) | [Contributing](contributing)
-
----
 
 ## Installation
 
@@ -130,27 +121,19 @@ The `--json` flag produces structured output you can pipe into other tools:
   "loop": {
     "total_turns": 151,
     "tool_calls_total": 55,
-    "error_recovery_count": 6,
-    "...": "..."
+    "error_recovery_count": 6
   },
   "tools": {
-    "frequency": {"Bash": 27, "Write": 10, "...": "..."},
-    "sequence": ["Bash", "Write", "Bash", "..."],
-    "diversity": 0.164,
-    "...": "..."
+    "frequency": {"Bash": 27, "Write": 10},
+    "sequence": ["Bash", "Write", "Bash"],
+    "diversity": 0.164
   },
   "context": {
     "cache_hit_rate": 0.977,
-    "peak_context": 63800,
-    "...": "..."
+    "peak_context": 63800
   },
   "planning": {
-    "thrashing_score": 0.47,
-    "...": "..."
+    "thrashing_score": 0.47
   }
 }
 ```
-
----
-
-[Home](.) | [Contributing](contributing)

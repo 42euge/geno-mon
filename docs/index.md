@@ -1,8 +1,3 @@
----
-layout: default
-title: geno-mon
----
-
 # geno-mon
 
 **Agent observability for agentic harnesses.**
@@ -96,10 +91,8 @@ Currently parses **Claude Code** JSONL session logs (`~/.claude/projects/`). Sup
 
 ## Part of the geno ecosystem
 
-- [geno](https://github.com/42euge/geno) — agent orchestrator
-- [geno-tools](https://github.com/42euge/geno-tools) — skills package
-- **geno-mon** — agent observability (this project)
-
----
-
-[User Guide](guide) | [Contributing & Development](contributing)
+| Project | Role |
+|---|---|
+| [geno](https://github.com/42euge/geno) | Agent orchestrator |
+| [geno-tools](https://github.com/42euge/geno-tools) | Skills package |
+| **geno-mon** | Agent observability |
