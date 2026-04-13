@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import click
@@ -154,6 +155,44 @@ def _metrics_to_dict(session: Session, metrics: SessionMetrics) -> dict:
     }
 
 
+def _resolve_session(path: str, project_filter: str | None = None) -> Path | None:
+    """Resolve a session identifier to a JSONL file path.
+
+    Accepts:
+    - Full file path (/path/to/session.jsonl)
+    - Partial session ID (d2cf72cc) — matches against discovered sessions
+    - Numeric index (1, 2, 3) — picks from recent sessions list
+    """
+    # Full path
+    p = Path(path)
+    if p.exists():
+        return p
+
+    sessions = discover_sessions(project_filter)
+    if not sessions:
+        return None
+
+    # Numeric index (1-based)
+    try:
+        idx = int(path)
+        if 1 <= idx <= len(sessions):
+            return sessions[idx - 1]["path"]
+    except ValueError:
+        pass
+
+    # Partial session ID match
+    matches = [s for s in sessions if s["session_id"].startswith(path)]
+    if len(matches) == 1:
+        return matches[0]["path"]
+    if len(matches) > 1:
+        click.echo(f"Ambiguous session ID '{path}', matches {len(matches)} sessions. Be more specific.")
+        for m in matches[:5]:
+            click.echo(f"  {m['session_id']}")
+        raise SystemExit(1)
+
+    return None
+
+
 def _interactive_picker(as_json: bool) -> None:
     """Interactive session picker."""
     sessions = discover_sessions()
@@ -214,12 +253,47 @@ def _format_age(dt) -> str:
 @click.argument("path", required=False, type=click.Path(exists=False))
 @click.option("--json", "as_json", is_flag=True, help="Output as JSON")
 @click.option("--project", "project_filter", help="Filter sessions by project name")
-def main(path: str | None, as_json: bool, project_filter: str | None) -> None:
+@click.option("--latest", "-l", is_flag=True, help="Analyze the most recent session (non-interactive)")
+@click.option("--nth", "-n", type=int, help="Analyze the Nth most recent session (1=latest)")
+def main(path: str | None, as_json: bool, project_filter: str | None, latest: bool, nth: int | None) -> None:
     """geno-mon — agent observability for agentic harnesses.
 
     Run without arguments for interactive session picker.
-    Pass a session JSONL path to analyze directly.
+    Pass a session JSONL path, partial session ID, or index number to analyze directly.
+
+    \b
+    Examples:
+      geno-mon                     # interactive picker
+      geno-mon --latest            # most recent session
+      geno-mon -n 3                # 3rd most recent session
+      geno-mon d2cf72cc            # match by partial session ID
+      geno-mon 2                   # 2nd most recent session
+      geno-mon <path.jsonl>        # analyze specific file
+      geno-mon list                # list all sessions
+      geno-mon list --json         # list as JSON (for scripting)
     """
+    # --latest is shorthand for -n 1
+    if latest:
+        nth = 1
+
+    # -n flag: pick Nth most recent session
+    if nth is not None:
+        sessions = discover_sessions(project_filter)
+        if not sessions:
+            click.echo("No sessions found.")
+            raise SystemExit(1)
+        if nth < 1 or nth > len(sessions):
+            click.echo(f"Index {nth} out of range (1-{len(sessions)})")
+            raise SystemExit(1)
+        selected = sessions[nth - 1]
+        session = parse_session(selected["path"])
+        metrics = compute_metrics(session)
+        if as_json:
+            click.echo(json.dumps(_metrics_to_dict(session, metrics), indent=2))
+        else:
+            _print_session_summary(session, metrics)
+        return
+
     # Handle "list" as a pseudo-subcommand
     if path == "list":
         sessions = discover_sessions(project_filter)
@@ -246,10 +320,10 @@ def main(path: str | None, as_json: bool, project_filter: str | None) -> None:
         click.echo()
         click.secho("Available sessions:", bold=True)
         click.echo()
-        for s in sessions[:30]:
+        for i, s in enumerate(sessions[:30], 1):
             project = _shorten_project(s["project"])
             age = _format_age(s["modified_time"])
-            click.echo(f"  {project:<42} {s['session_id'][:8]}  ({age})")
+            click.echo(f"  {i:>3}. {project:<42} {s['session_id'][:8]}  ({age})")
         click.echo()
         return
 
@@ -259,14 +333,15 @@ def main(path: str | None, as_json: bool, project_filter: str | None) -> None:
         click.echo("Compare mode coming soon.")
         return
 
-    # Direct path provided — parse and show metrics
+    # Path/ID/index provided — resolve and analyze
     if path:
-        p = Path(path)
-        if not p.exists():
-            click.echo(f"File not found: {path}")
+        resolved = _resolve_session(path, project_filter)
+        if resolved is None:
+            click.echo(f"Session not found: {path}")
+            click.echo("Try: geno-mon list")
             raise SystemExit(1)
 
-        session = parse_session(p)
+        session = parse_session(resolved)
         metrics = compute_metrics(session)
 
         if as_json:
@@ -275,7 +350,16 @@ def main(path: str | None, as_json: bool, project_filter: str | None) -> None:
             _print_session_summary(session, metrics)
         return
 
-    # No args — interactive picker
+    # No args — interactive picker if TTY, otherwise show usage hint
+    if not sys.stdin.isatty():
+        click.echo("No TTY detected. Use --latest, -n <N>, or pass a session ID/path.")
+        click.echo("Examples:")
+        click.echo("  geno-mon --latest            # most recent session")
+        click.echo("  geno-mon -n 3                # 3rd most recent")
+        click.echo("  geno-mon d2cf72cc            # by partial session ID")
+        click.echo("  geno-mon list --json         # list sessions as JSON")
+        raise SystemExit(1)
+
     _interactive_picker(as_json)
 
 
