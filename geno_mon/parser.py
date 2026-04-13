@@ -176,19 +176,20 @@ def _extract_subagents(turns: list[Turn], entries: list[dict[str, Any]]) -> list
     return subagents
 
 
-def _extract_project_name(path: Path) -> str:
-    """Extract a readable project name from the session file path."""
-    # Path pattern: ~/.claude/projects/<project-slug>/<session-id>.jsonl
+def _extract_project_name(cwd: str, path: Path) -> str:
+    """Extract a readable project name from the session's working directory.
+
+    Uses the cwd field from log entries (the actual directory the agent was working in).
+    Falls back to the file path slug if cwd is not available.
+    """
+    if cwd:
+        return cwd
+
+    # Fallback: use the project slug from the file path
     parts = path.parts
     try:
         projects_idx = parts.index("projects")
-        slug = parts[projects_idx + 1]
-        # Clean up the slug: strip leading dash, replace dashes with /
-        slug = slug.lstrip("-")
-        # Take the last meaningful segment
-        segments = slug.split("-")
-        # Find the last few meaningful segments
-        return slug
+        return parts[projects_idx + 1].lstrip("-")
     except (ValueError, IndexError):
         return path.parent.name
 
@@ -241,7 +242,7 @@ def parse_session(path: Path) -> Session:
     subagents = _extract_subagents(turns, entries)
 
     # Determine project name
-    project = _extract_project_name(path)
+    project = _extract_project_name(cwd, path)
 
     # Session timing
     start_time = turns[0].timestamp if turns else None
@@ -275,15 +276,35 @@ def discover_sessions(project_filter: str | None = None) -> list[dict[str, Any]]
             continue
 
         project_name = project_dir.name
-        if project_filter and project_filter.lower() not in project_name.lower():
-            continue
 
         for jsonl_file in project_dir.glob("*.jsonl"):
+            # Peek at first few entries for cwd
+            cwd = ""
+            try:
+                with open(jsonl_file) as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            entry = json.loads(line)
+                            cwd = entry.get("cwd", "")
+                            if cwd:
+                                break
+                        except json.JSONDecodeError:
+                            continue
+            except OSError:
+                pass
+
+            display_project = cwd if cwd else project_name
+            if project_filter and project_filter.lower() not in display_project.lower():
+                continue
+
             sessions.append(
                 {
                     "path": jsonl_file,
                     "session_id": jsonl_file.stem,
-                    "project": project_name,
+                    "project": display_project,
                     "modified_time": datetime.fromtimestamp(
                         jsonl_file.stat().st_mtime, tz=timezone.utc
                     ),

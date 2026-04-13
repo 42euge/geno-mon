@@ -35,16 +35,28 @@ def _format_tokens(n: int) -> str:
     return str(n)
 
 
-def _shorten_project(slug: str, max_len: int = 40) -> str:
-    """Make project slugs readable."""
-    slug = slug.lstrip("-")
-    parts = slug.split("-")
-    # Drop common prefixes (Users, euge, Library, etc.)
-    skip = {"Users", "euge", "Library", "Mobile", "Documents", "iCloud~md~obsidian"}
-    filtered = [p for p in parts if p not in skip]
-    result = "-".join(filtered)
+def _shorten_project(project: str, max_len: int = 50) -> str:
+    """Shorten a project path for display.
+
+    Takes a cwd path (e.g., /Users/euge/code/my-project) and extracts
+    the last meaningful directory components.
+    """
+    # If it looks like an absolute path, use Path to get components
+    if "/" in project:
+        p = Path(project)
+        home = Path.home()
+        try:
+            # Show relative to home
+            rel = p.relative_to(home)
+            result = str(rel)
+        except ValueError:
+            result = str(p)
+    else:
+        # Fallback: it's a slug, just clean it up
+        result = project.lstrip("-")
+
     if len(result) > max_len:
-        result = "..." + result[-(max_len - 3) :]
+        result = "..." + result[-(max_len - 3):]
     return result
 
 
@@ -227,6 +239,133 @@ def _interactive_picker(as_json: bool) -> None:
         _print_session_summary(session, metrics)
 
 
+def _print_tail(session: Session, last_n: int, as_json: bool) -> None:
+    """Print the last N messages from a session."""
+    turns = session.turns[-last_n:] if last_n < len(session.turns) else session.turns
+
+    if as_json:
+        entries = []
+        for turn in turns:
+            entry = {
+                "role": turn.role,
+                "timestamp": turn.timestamp.isoformat(),
+                "uuid": turn.uuid,
+            }
+            if turn.role == "assistant":
+                # Text content
+                text = turn.text_content
+                if text:
+                    entry["text"] = text[:500] + ("..." if len(text) > 500 else "")
+                # Tool calls
+                if turn.tool_calls:
+                    entry["tool_calls"] = [
+                        {"name": tc.tool_name, "id": tc.tool_id[:12]}
+                        for tc in turn.tool_calls
+                    ]
+                if turn.usage:
+                    entry["tokens"] = {
+                        "input": turn.usage.total_input,
+                        "output": turn.usage.output_tokens,
+                    }
+            elif turn.role == "user":
+                text = turn.text_content
+                if text:
+                    entry["text"] = text[:500] + ("..." if len(text) > 500 else "")
+                # Tool results
+                results = [b for b in turn.content_blocks if b.type == "tool_result"]
+                if results:
+                    entry["tool_results"] = len(results)
+            entries.append(entry)
+        click.echo(json.dumps(entries, indent=2))
+        return
+
+    click.echo()
+    click.secho(f"── Last {len(turns)} messages from {session.session_id[:8]} ", fg="cyan", bold=True, nl=False)
+    click.secho("─" * 30, fg="cyan")
+    click.echo()
+
+    for turn in turns:
+        ts = turn.timestamp.strftime("%H:%M:%S")
+
+        if turn.role == "user":
+            text = turn.text_content
+            tool_results = [b for b in turn.content_blocks if b.type == "tool_result"]
+
+            if text:
+                click.secho(f"  [{ts}] user: ", fg="green", bold=True, nl=False)
+                # Truncate long messages
+                display = text[:200] + ("..." if len(text) > 200 else "")
+                click.echo(display)
+            if tool_results:
+                click.secho(f"  [{ts}] ", fg="green", nl=False)
+                click.echo(f"← {len(tool_results)} tool result(s)")
+
+        elif turn.role == "assistant":
+            text = turn.text_content
+            tool_calls = turn.tool_calls
+
+            if text:
+                click.secho(f"  [{ts}] assistant: ", fg="blue", bold=True, nl=False)
+                display = text[:200] + ("..." if len(text) > 200 else "")
+                click.echo(display)
+            for tc in tool_calls:
+                click.secho(f"  [{ts}] ", fg="blue", nl=False)
+                # Show tool name and key input
+                input_summary = ""
+                if "command" in tc.input:
+                    input_summary = f" → {tc.input['command'][:80]}"
+                elif "file_path" in tc.input:
+                    input_summary = f" → {tc.input['file_path']}"
+                elif "pattern" in tc.input:
+                    input_summary = f" → {tc.input['pattern']}"
+                elif "description" in tc.input:
+                    input_summary = f" → {tc.input['description']}"
+                click.echo(f"→ {tc.tool_name}{input_summary}")
+
+    click.echo()
+
+
+def _handle_tail(as_json: bool, project_filter: str | None) -> None:
+    """Handle the tail subcommand."""
+    # Parse remaining args from sys.argv
+    # Usage: geno-mon tail [session] [--last N]
+    args = sys.argv[2:]  # skip "geno-mon" and "tail"
+
+    last_n = 10
+    session_ref = None
+
+    i = 0
+    while i < len(args):
+        if args[i] in ("--last", "-L"):
+            if i + 1 < len(args):
+                try:
+                    last_n = int(args[i + 1])
+                except ValueError:
+                    click.echo(f"Invalid --last value: {args[i + 1]}")
+                    raise SystemExit(1)
+                i += 2
+                continue
+        elif not args[i].startswith("-"):
+            session_ref = args[i]
+        i += 1
+
+    # Default to latest session
+    if session_ref is None:
+        sessions = discover_sessions(project_filter)
+        if not sessions:
+            click.echo("No sessions found.")
+            raise SystemExit(1)
+        resolved = sessions[0]["path"]
+    else:
+        resolved = _resolve_session(session_ref, project_filter)
+        if resolved is None:
+            click.echo(f"Session not found: {session_ref}")
+            raise SystemExit(1)
+
+    session = parse_session(resolved)
+    _print_tail(session, last_n, as_json)
+
+
 def _format_age(dt) -> str:
     """Format a datetime as relative age."""
     from datetime import datetime, timezone
@@ -271,6 +410,8 @@ def main(path: str | None, as_json: bool, project_filter: str | None, latest: bo
       geno-mon <path.jsonl>        # analyze specific file
       geno-mon list                # list all sessions
       geno-mon list --json         # list as JSON (for scripting)
+      geno-mon tail                # last 10 messages of latest session
+      geno-mon tail d2cf72cc --last 20  # last 20 messages of specific session
     """
     # --latest is shorthand for -n 1
     if latest:
@@ -363,5 +504,52 @@ def main(path: str | None, as_json: bool, project_filter: str | None, latest: bo
     _interactive_picker(as_json)
 
 
-if __name__ == "__main__":
+def entry_point() -> None:
+    """Entry point that handles pseudo-subcommands before Click parsing."""
+    # Intercept 'tail' before Click sees it, since tail has its own args
+    args = sys.argv[1:]
+    if args and args[0] == "tail":
+        # Parse tail args manually
+        tail_args = args[1:]
+        last_n = 10
+        session_ref = None
+        as_json = False
+
+        i = 0
+        while i < len(tail_args):
+            if tail_args[i] in ("--last", "-L"):
+                if i + 1 < len(tail_args):
+                    try:
+                        last_n = int(tail_args[i + 1])
+                    except ValueError:
+                        click.echo(f"Invalid --last value: {tail_args[i + 1]}")
+                        raise SystemExit(1)
+                    i += 2
+                    continue
+            elif tail_args[i] == "--json":
+                as_json = True
+            elif not tail_args[i].startswith("-"):
+                session_ref = tail_args[i]
+            i += 1
+
+        if session_ref is None:
+            sessions = discover_sessions()
+            if not sessions:
+                click.echo("No sessions found.")
+                raise SystemExit(1)
+            resolved = sessions[0]["path"]
+        else:
+            resolved = _resolve_session(session_ref)
+            if resolved is None:
+                click.echo(f"Session not found: {session_ref}")
+                raise SystemExit(1)
+
+        session = parse_session(resolved)
+        _print_tail(session, last_n, as_json)
+        return
+
     main()
+
+
+if __name__ == "__main__":
+    entry_point()

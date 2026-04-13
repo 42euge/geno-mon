@@ -10,7 +10,7 @@ requires-python = ">=3.10"
 dependencies = ["click>=8.0"]
 
 [project.scripts]
-geno-mon = "geno_mon.cli:main"
+geno-mon = "geno_mon.cli:entry_point"
 
 [tool.setuptools.packages.find]
 include = ["geno_mon*"]
