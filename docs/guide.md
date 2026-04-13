@@ -1,15 +1,4 @@
-# User Guide
-
-## Installation
-
-```bash
-git clone https://github.com/42euge/geno-mon.git
-cd geno-mon
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e .
-```
-
-Requires Python 3.10+. The only dependency is `click`.
+# Reference
 
 ## CLI reference
 

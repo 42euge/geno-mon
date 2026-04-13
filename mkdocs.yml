@@ -20,19 +20,28 @@ theme:
         icon: material/brightness-7
         name: Switch to dark mode
   features:
+    - navigation.tabs
     - navigation.sections
     - navigation.expand
     - navigation.top
+    - navigation.instant
     - content.code.copy
+    - search.suggest
+    - search.highlight
     - toc.follow
   icon:
     repo: fontawesome/brands/github
 
 nav:
   - Home: index.md
-  - User Guide: guide.md
-  - Contributing & Development: contributing.md
+  - Getting Started: getting-started.md
+  - Concepts: concepts.md
+  - Reference: guide.md
+  - Contributing: contributing.md
   - Roadmap: roadmap.md
+
+plugins:
+  - search
 
 markdown_extensions:
   - admonition
@@ -45,3 +54,8 @@ markdown_extensions:
   - md_in_html
   - toc:
       permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/42euge/geno-mon

@@ -119,3 +119,44 @@ python -m pytest tests/
 - Dataclasses for structured data
 - No classes where functions suffice
 - Keep it simple — avoid abstractions until they're needed twice
+
+## Reporting issues
+
+Open an issue on [GitHub](https://github.com/42euge/geno-mon/issues). Include:
+
+- What you ran (command + flags)
+- What you expected
+- What happened instead
+- Python version and OS
+
+For parser issues, a (redacted) sample of the JSONL that causes the problem is extremely helpful.
+
+## Pull requests
+
+Contributions are welcome. Here's what makes a good PR:
+
+- **New metrics** — add a field, compute it, display it, include JSON output. See the [extension guide above](#adding-a-new-metric).
+- **New parsers** — support for Codex CLI, Cursor, Aider, or any agent with structured logs. Must produce the same `Session` model.
+- **Bug fixes** — if the parser mishandles a log format, fix it and include the edge case.
+- **Docs improvements** — typos, clarity, missing examples.
+
+Before submitting:
+
+1. Run `python -m pytest tests/` — all tests should pass
+2. Test against a real session if you changed the parser or metrics
+3. Keep the diff focused — one concern per PR
+
+## Testing against real sessions
+
+The fastest way to verify changes:
+
+```bash
+# Parse a real session and eyeball the output
+geno-mon ~/.claude/projects/<any-project>/<any-session>.jsonl
+
+# Compare JSON output before and after your change
+geno-mon <session> --json > before.json
+# ... make your change ...
+geno-mon <session> --json > after.json
+diff before.json after.json
+```
