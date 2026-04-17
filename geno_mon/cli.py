@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import click
@@ -325,6 +326,166 @@ def _print_tail(session: Session, last_n: int, as_json: bool) -> None:
     click.echo()
 
 
+def _extract_fork_context(session: Session, max_user_messages: int = 50) -> str:
+    """Extract session context as a markdown document for forking into a new session."""
+    lines: list[str] = []
+
+    lines.append("# Forked Session Context")
+    lines.append("")
+    lines.append(f"*Forked from session `{session.session_id[:8]}` on {datetime.now().strftime('%Y-%m-%d %H:%M')}*")
+    lines.append("")
+
+    # Environment
+    lines.append("## Environment")
+    lines.append("")
+    if session.cwd:
+        lines.append(f"- **Working directory:** `{session.cwd}`")
+    if session.git_branch:
+        lines.append(f"- **Git branch:** `{session.git_branch}`")
+    if session.model:
+        lines.append(f"- **Model:** {session.model}")
+    lines.append("")
+
+    # Files touched — extract from tool calls
+    files_read: set[str] = set()
+    files_edited: set[str] = set()
+    files_written: set[str] = set()
+    commands_run: list[str] = []
+    glob_patterns: list[str] = []
+    grep_patterns: list[str] = []
+
+    for turn in session.turns:
+        for tc in turn.tool_calls:
+            fp = tc.input.get("file_path", "")
+            if tc.tool_name == "Read" and fp:
+                files_read.add(fp)
+            elif tc.tool_name == "Edit" and fp:
+                files_edited.add(fp)
+            elif tc.tool_name == "Write" and fp:
+                files_written.add(fp)
+            elif tc.tool_name == "Bash":
+                cmd = tc.input.get("command", "")
+                if cmd:
+                    commands_run.append(cmd)
+            elif tc.tool_name == "Glob":
+                pat = tc.input.get("pattern", "")
+                if pat:
+                    glob_patterns.append(pat)
+            elif tc.tool_name == "Grep":
+                pat = tc.input.get("pattern", "")
+                if pat:
+                    grep_patterns.append(pat)
+
+    if files_edited or files_written:
+        lines.append("## Files Modified")
+        lines.append("")
+        for f in sorted(files_edited | files_written):
+            tag = "edited" if f in files_edited else "created"
+            lines.append(f"- `{f}` ({tag})")
+        lines.append("")
+
+    if files_read - files_edited - files_written:
+        lines.append("## Files Read")
+        lines.append("")
+        for f in sorted(files_read - files_edited - files_written):
+            lines.append(f"- `{f}`")
+        lines.append("")
+
+    if commands_run:
+        lines.append("## Commands Run")
+        lines.append("")
+        # Show unique commands, limit to last 30
+        seen: set[str] = set()
+        unique_cmds: list[str] = []
+        for cmd in commands_run:
+            if cmd not in seen:
+                seen.add(cmd)
+                unique_cmds.append(cmd)
+        for cmd in unique_cmds[-30:]:
+            # Truncate very long commands
+            display = cmd[:200] + ("..." if len(cmd) > 200 else "")
+            lines.append(f"- `{display}`")
+        lines.append("")
+
+    # Conversation — user messages with assistant summaries
+    lines.append("## Conversation History")
+    lines.append("")
+
+    user_msgs = []
+    for i, turn in enumerate(session.turns):
+        if turn.role == "user":
+            text = turn.text_content.strip()
+            if text:
+                user_msgs.append((i, turn, text))
+
+    # Include all user messages up to max
+    display_msgs = user_msgs[-max_user_messages:] if len(user_msgs) > max_user_messages else user_msgs
+    if len(user_msgs) > max_user_messages:
+        lines.append(f"*({len(user_msgs) - max_user_messages} earlier messages omitted)*")
+        lines.append("")
+
+    for idx, (turn_idx, turn, text) in enumerate(display_msgs):
+        ts = turn.timestamp.strftime("%H:%M:%S")
+        lines.append(f"### User [{ts}]")
+        lines.append("")
+        lines.append(text)
+        lines.append("")
+
+        # Find the assistant response(s) following this user message
+        for j in range(turn_idx + 1, len(session.turns)):
+            next_turn = session.turns[j]
+            if next_turn.role == "user":
+                break
+            if next_turn.role == "assistant":
+                assistant_text = next_turn.text_content.strip()
+                tools = next_turn.tool_calls
+
+                if assistant_text or tools:
+                    lines.append(f"**Assistant [{next_turn.timestamp.strftime('%H:%M:%S')}]:**")
+                    lines.append("")
+                if assistant_text:
+                    # Truncate very long responses
+                    if len(assistant_text) > 1000:
+                        assistant_text = assistant_text[:1000] + "\n\n*[truncated]*"
+                    lines.append(assistant_text)
+                    lines.append("")
+                if tools:
+                    tool_summary = ", ".join(
+                        f"`{tc.tool_name}`" + (f"({tc.input.get('file_path', tc.input.get('command', tc.input.get('pattern', ''))[:60])})" if any(k in tc.input for k in ('file_path', 'command', 'pattern')) else "")
+                        for tc in tools[:10]
+                    )
+                    if len(tools) > 10:
+                        tool_summary += f", +{len(tools) - 10} more"
+                    lines.append(f"*Tools used: {tool_summary}*")
+                    lines.append("")
+
+    return "\n".join(lines)
+
+
+def _handle_fork(session_ref: str | None, project_filter: str | None, output_file: str | None, max_messages: int) -> None:
+    """Handle the fork subcommand."""
+    if session_ref is None:
+        sessions = discover_sessions(project_filter)
+        if not sessions:
+            click.echo("No sessions found.", err=True)
+            raise SystemExit(1)
+        resolved = sessions[0]["path"]
+    else:
+        resolved = _resolve_session(session_ref, project_filter)
+        if resolved is None:
+            click.echo(f"Session not found: {session_ref}", err=True)
+            raise SystemExit(1)
+
+    session = parse_session(resolved)
+    context = _extract_fork_context(session, max_user_messages=max_messages)
+
+    if output_file:
+        Path(output_file).write_text(context)
+        click.echo(f"Fork context written to {output_file}", err=True)
+    else:
+        click.echo(context)
+
+
 def _handle_tail(as_json: bool, project_filter: str | None) -> None:
     """Handle the tail subcommand."""
     # Parse remaining args from sys.argv
@@ -412,6 +573,8 @@ def main(path: str | None, as_json: bool, project_filter: str | None, latest: bo
       geno-mon list --json         # list as JSON (for scripting)
       geno-mon tail                # last 10 messages of latest session
       geno-mon tail d2cf72cc --last 20  # last 20 messages of specific session
+      geno-mon fork                # extract context for forking latest session
+      geno-mon fork d2cf72cc -o ctx.md  # fork specific session to file
     """
     # --latest is shorthand for -n 1
     if latest:
@@ -506,8 +669,45 @@ def main(path: str | None, as_json: bool, project_filter: str | None, latest: bo
 
 def entry_point() -> None:
     """Entry point that handles pseudo-subcommands before Click parsing."""
-    # Intercept 'tail' before Click sees it, since tail has its own args
     args = sys.argv[1:]
+
+    # Intercept 'fork' before Click sees it
+    if args and args[0] == "fork":
+        fork_args = args[1:]
+        session_ref = None
+        output_file = None
+        project_filter = None
+        max_messages = 50
+
+        i = 0
+        while i < len(fork_args):
+            if fork_args[i] in ("--output", "-o"):
+                if i + 1 < len(fork_args):
+                    output_file = fork_args[i + 1]
+                    i += 2
+                    continue
+            elif fork_args[i] in ("--project",):
+                if i + 1 < len(fork_args):
+                    project_filter = fork_args[i + 1]
+                    i += 2
+                    continue
+            elif fork_args[i] in ("--max-messages", "-m"):
+                if i + 1 < len(fork_args):
+                    try:
+                        max_messages = int(fork_args[i + 1])
+                    except ValueError:
+                        click.echo(f"Invalid --max-messages value: {fork_args[i + 1]}")
+                        raise SystemExit(1)
+                    i += 2
+                    continue
+            elif not fork_args[i].startswith("-"):
+                session_ref = fork_args[i]
+            i += 1
+
+        _handle_fork(session_ref, project_filter, output_file, max_messages)
+        return
+
+    # Intercept 'tail' before Click sees it, since tail has its own args
     if args and args[0] == "tail":
         # Parse tail args manually
         tail_args = args[1:]
