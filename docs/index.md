@@ -10,7 +10,7 @@ Nobody measures the process. **geno-mon does.**
 
 ## What you get
 
-Run `geno-mon` and point it at any Claude Code session. In seconds you'll see:
+Run `geno-mon` and point it at any agent session. In seconds you'll see:
 
 - How many turns and tokens the agent used, and how efficiently
 - Which tools it reached for and how often
@@ -55,14 +55,16 @@ Run `geno-mon` and point it at any Claude Code session. In seconds you'll see:
 ## Quick start
 
 ```bash
-git clone https://github.com/42euge/geno-mon.git
-cd geno-mon
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e .
-geno-mon
+geno-tools install geno-mon
 ```
 
-That's it. The interactive picker will list your recent sessions. Pick one and see what happened inside.
+Or from within an agent session:
+
+```
+/geno-tools install geno-mon
+```
+
+Once installed, run `geno-mon` — the interactive picker will list your recent sessions. Pick one and see what happened inside.
 
 [:material-rocket-launch: Getting Started](getting-started.md){ .md-button .md-button--primary }
 [:material-book-open-variant: Commands](commands/index.md){ .md-button }

@@ -1,0 +1,8 @@
+name: geno-mon
+version: "0.1.0"
+description: "Agent observability — insight into agentic harnesses"
+
+venv:
+  name: geno-mon
+  deps:
+    - "."

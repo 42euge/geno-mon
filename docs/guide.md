@@ -4,7 +4,7 @@
 
 ### `geno-mon` (no arguments)
 
-Opens an interactive picker showing your most recent Claude Code sessions. Select one to see its full metrics breakdown.
+Opens an interactive picker showing your most recent agent sessions. Select one to see its full metrics breakdown.
 
 ```
 $ geno-mon
@@ -82,7 +82,7 @@ geno-mon list --json
 
 ## Where are session logs?
 
-Claude Code stores session logs at:
+Session logs are stored at:
 
 ```
 ~/.claude/projects/<project-slug>/<session-id>.jsonl

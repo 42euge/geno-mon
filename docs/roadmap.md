@@ -8,7 +8,7 @@ geno-mon is being built in deliberate phases. Each phase produces something usef
 
 **Status:** Complete
 
-Parse Claude Code JSONL session logs into structured Python dataclasses.
+Parse JSONL session logs into structured Python dataclasses.
 
 - [x] JSONL reader with error tolerance
 - [x] Data model: `Session`, `Turn`, `ToolCall`, `TokenUsage`, `SubagentSpawn`
