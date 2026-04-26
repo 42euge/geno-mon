@@ -20,11 +20,11 @@ theme:
         icon: material/brightness-7
         name: Switch to dark mode
   features:
-    - navigation.tabs
     - navigation.sections
     - navigation.expand
     - navigation.top
     - navigation.instant
+    - navigation.path
     - content.code.copy
     - search.suggest
     - search.highlight
@@ -34,11 +34,20 @@ theme:
 
 nav:
   - Home: index.md
-  - Getting Started: getting-started.md
-  - Concepts: concepts.md
-  - Reference: guide.md
-  - Contributing: contributing.md
-  - Roadmap: roadmap.md
+  - Getting Started:
+    - Installation & First Run: getting-started.md
+    - Concepts: concepts.md
+  - Commands:
+    - Overview: commands/index.md
+    - list: commands/list.md
+    - tail: commands/tail.md
+  - Reference:
+    - Metrics: reference/metrics.md
+    - JSON Schema: reference/json-schema.md
+    - Session Logs: reference/session-logs.md
+  - Project:
+    - Contributing: contributing.md
+    - Roadmap: roadmap.md
 
 plugins:
   - search

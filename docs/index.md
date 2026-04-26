@@ -65,5 +65,5 @@ geno-mon
 That's it. The interactive picker will list your recent sessions. Pick one and see what happened inside.
 
 [:material-rocket-launch: Getting Started](getting-started.md){ .md-button .md-button--primary }
-[:material-book-open-variant: Concepts](concepts.md){ .md-button }
+[:material-book-open-variant: Commands](commands/index.md){ .md-button }
 [:material-github: View on GitHub](https://github.com/42euge/geno-mon){ .md-button }
