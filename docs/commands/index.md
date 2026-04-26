@@ -12,7 +12,6 @@ geno-mon is a single CLI binary with subcommands for different operations.
 | `geno-mon <session>` | Analyze by partial ID, index, or file path |
 | `geno-mon list` | [List all sessions](list.md) |
 | `geno-mon tail` | [Show recent messages from a session](tail.md) |
-| `geno-mon fork` | [Extract session context for forking](fork.md) |
 
 ## Session resolution
 

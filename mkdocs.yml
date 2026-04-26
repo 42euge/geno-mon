@@ -41,7 +41,6 @@ nav:
     - Overview: commands/index.md
     - list: commands/list.md
     - tail: commands/tail.md
-    - fork: commands/fork.md
   - Reference:
     - Metrics: reference/metrics.md
     - JSON Schema: reference/json-schema.md

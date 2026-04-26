@@ -52,21 +52,6 @@ Run `geno-mon` and point it at any Claude Code session. In seconds you'll see:
         3x  ...geno_mon/models.py
 ```
 
-## Fork a session
-
-Need to continue a session that ended? `geno-mon fork` extracts the full context — environment, files touched, conversation history — into a markdown document you can paste into a new session.
-
-```bash
-geno-mon fork                           # fork latest session
-geno-mon fork d2cf72cc -o context.md     # save to file
-```
-
-The new session picks up exactly where the old one left off, with full awareness of what was done.
-
-[:material-source-fork: Learn more about fork](commands/fork.md){ .md-button }
-
----
-
 ## Quick start
 
 ```bash
