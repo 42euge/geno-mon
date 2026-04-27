@@ -1,6 +1,6 @@
 # geno-mon list
 
-List all discovered Claude Code sessions, sorted by recency.
+List all discovered agent sessions, sorted by recency.
 
 ## Usage
 

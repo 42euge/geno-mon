@@ -2,7 +2,7 @@
 
 ## Where are they?
 
-Claude Code stores session logs at:
+Session logs are stored at:
 
 ```
 ~/.claude/projects/<project-slug>/<session-id>.jsonl

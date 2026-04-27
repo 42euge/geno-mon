@@ -2,6 +2,14 @@
 
 ## Getting started
 
+Install via geno-tools:
+
+```bash
+geno-tools install geno-mon
+```
+
+For development, clone and install in editable mode:
+
 ```bash
 git clone https://github.com/42euge/geno-mon.git
 cd geno-mon

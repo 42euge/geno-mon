@@ -3,10 +3,13 @@
 ## Installation
 
 ```bash
-git clone https://github.com/42euge/geno-mon.git
-cd geno-mon
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e .
+geno-tools install geno-mon
+```
+
+Or from within an agent session:
+
+```
+/geno-tools install geno-mon
 ```
 
 Requires Python 3.10+. The only runtime dependency is `click`.
@@ -26,7 +29,7 @@ Recent sessions:
 Select session [1]:
 ```
 
-geno-mon discovers all Claude Code sessions stored in `~/.claude/projects/` and lists them by recency. Pick one and you'll get a full metrics breakdown.
+geno-mon discovers all agent sessions stored in `~/.claude/projects/` and lists them by recency. Pick one and you'll get a full metrics breakdown.
 
 ## Reading the output
 
@@ -42,7 +45,7 @@ The basics: how long was the session, how many turns, how many tokens. The key n
 
 A frequency breakdown of which tools the agent used. **Diversity** (unique tools / total calls) tells you whether the agent is using the right tool for each job or leaning on one tool for everything.
 
-Heavy `Bash` usage in a Claude Code session often means the agent is shelling out instead of using dedicated tools like `Read`, `Edit`, or `Grep`.
+Heavy `Bash` usage in an agent session often means the agent is shelling out instead of using dedicated tools like `Read`, `Edit`, or `Grep`.
 
 ### Context & Cache
 

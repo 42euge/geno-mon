@@ -12,6 +12,18 @@ Most evaluations of AI agents focus on **output quality** — did the patch pass
 - **Planning quality** — task decomposition vs thrashing; does the agent plan or brute force?
 - **Metacognitive signals** — does the agent know when to stop, retry, or ask for help?
 
+## Installation
+
+```bash
+geno-tools install geno-mon
+```
+
+Or from within an agent session:
+
+```
+/geno-tools install geno-mon
+```
+
 ## Part of the geno ecosystem
 
 - [geno](https://github.com/42euge/geno) — agent orchestrator
