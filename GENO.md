@@ -51,6 +51,16 @@ Each layer only depends on the one before it.
 - **Dataclasses over dicts**: parsed data is typed dataclasses, not raw dicts
 - **Metrics are computed, not stored**: always derived fresh from the parsed session
 - **Type hints** on all function signatures
+- **Prefix aliasing**: slash commands use the canonical `geno-` prefix (e.g. `/geno-mon`). Short aliases like `/gt-mon` are configured per-install in `~/.geno/config.yaml` and are not hardcoded in this repo. See the [geno-tools alias docs](https://github.com/42euge/geno-tools) for details.
+
+### Adding a new skill
+
+To add a new skill (sub-skillset) to this repo:
+
+1. Create a directory under `skills/<skill-name>/` with a `SKILL.md` following the standard frontmatter schema (name, description, allowed-tools, argument-hint, metadata).
+2. Register the skill in `genotools.yaml` if it requires additional venv deps or install hooks.
+3. Add the skill to the **Skills** table in this file.
+4. If the skill is the repo's primary (umbrella) skill, update the root `SKILL.md` symlink to point to it.
 
 ## Dependencies and runtime
 
