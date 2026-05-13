@@ -1,5 +1,5 @@
 site_name: geno-mon
-site_description: Agent observability for agentic harnesses
+site_description: Agent observability — session listing, metrics, tailing
 site_url: https://42euge.github.io/geno-mon/
 repo_url: https://github.com/42euge/geno-mon
 repo_name: 42euge/geno-mon
@@ -24,34 +24,34 @@ theme:
   font:
     text: Inter
     code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
   features:
+    - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
     - navigation.top
     - content.code.copy
+    - content.code.annotate
     - search.highlight
+    - search.suggest
     - toc.follow
-  icon:
-    repo: fontawesome/brands/github
 
 nav:
   - Home: index.md
-  - Getting Started:
-    - Installation & First Run: getting-started.md
-    - Concepts: concepts.md
-  - Commands:
-    - Overview: commands/index.md
-    - list: commands/list.md
-    - tail: commands/tail.md
-  - Reference:
-    - Metrics: reference/metrics.md
-    - JSON Schema: reference/json-schema.md
-    - Session Logs: reference/session-logs.md
-  - Project:
-    - Contributing: contributing.md
-    - Roadmap: roadmap.md
+  - Getting Started > Installation & First Run: getting-started.md
+  - Getting Started > Concepts: concepts.md
+  - Commands > Overview: commands/index.md
+  - Commands > list: commands/list.md
+  - Commands > tail: commands/tail.md
+  - Reference > Metrics: reference/metrics.md
+  - Reference > JSON Schema: reference/json-schema.md
+  - Reference > Session Logs: reference/session-logs.md
+  - Project > Contributing: contributing.md
+  - Project > Roadmap: roadmap.md
 
-plugins:
-  - search
+extra_css:
+  - stylesheets/extra.css
 
 markdown_extensions:
   - admonition
@@ -62,13 +62,14 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.tabbed:
       alternate_style: true
-  - tables
   - attr_list
   - md_in_html
+  - def_list
   - toc:
       permalink: true
 
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/42euge/geno-mon
+      link: https://github.com/42euge
+  generator: false
