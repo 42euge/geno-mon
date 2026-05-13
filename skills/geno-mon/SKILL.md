@@ -6,10 +6,22 @@ description: >-
   or see what another session is doing.
 allowed-tools: "Bash(~/.geno/venv/bin/geno-mon *)"
 argument-hint: "[list|tail|fork|<session-id>|--latest] [--json] [--project <name>]"
+<<<<<<< Updated upstream
 license: MIT
 metadata:
   author: 42euge
   version: "0.1.0"
+=======
+observability:
+  success_signal: "session list displayed, metrics report printed, or tail/fork output delivered to user"
+  failure_signals:
+    - "geno-mon CLI not installed or not on PATH"
+    - "no sessions found in ~/.claude/projects/"
+    - "specified session ID not found"
+  knowledge_reads:
+    - "~/.claude/projects/*/*.jsonl (Claude Code session logs)"
+  knowledge_writes: []
+>>>>>>> Stashed changes
 ---
 
 # geno-mon — Agent Observability
@@ -105,3 +117,19 @@ When showing results to the user, highlight:
 - **Tool diversity** — low diversity means heavy reliance on few tools
 
 For `tail` output, summarize what the session is currently working on based on the recent messages and tool calls.
+
+## Completion
+
+When this skill finishes, emit a trace:
+
+```bash
+geno-trace emit \
+  --skill geno-mon \
+  --status <success|failure|abandoned> \
+  --tool-calls <approximate count> \
+  --errors <count of tool/command errors>
+```
+
+- `success` = session list, metrics report, tail output, or fork context delivered to the user
+- `failure` = geno-mon CLI missing, no sessions found, or specified session not found
+- `abandoned` = user stopped early
