@@ -1,5 +1,7 @@
 # geno-mon
 
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://42euge.github.io/geno-mon/)
+
 Agent observability for agentic harnesses.
 
 Most evaluations of AI agents focus on **output quality** — did the patch pass tests? Was the answer correct? But the *process* by which an agent arrives at a result is a black box. geno-mon gives you insight into what's actually happening inside the agent loop.
