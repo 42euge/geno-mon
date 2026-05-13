@@ -1,17 +1,11 @@
 ---
 name: geno-mon
 description: >-
-  Agent observability — list sessions, view metrics, tail messages from other agent sessions.
+  Agent observability — list sessions, view metrics, tail messages from other Claude Code sessions.
   Use when user says /geno-mon, wants to peek at another session, check session metrics,
   or see what another session is doing.
 allowed-tools: "Bash(~/.geno/venv/bin/geno-mon *)"
 argument-hint: "[list|tail|fork|<session-id>|--latest] [--json] [--project <name>]"
-<<<<<<< Updated upstream
-license: MIT
-metadata:
-  author: 42euge
-  version: "0.1.0"
-=======
 observability:
   success_signal: "session list displayed, metrics report printed, or tail/fork output delivered to user"
   failure_signals:
@@ -21,16 +15,15 @@ observability:
   knowledge_reads:
     - "~/.claude/projects/*/*.jsonl (Claude Code session logs)"
   knowledge_writes: []
->>>>>>> Stashed changes
 ---
 
 # geno-mon — Agent Observability
 
 ```!
-which ~/.geno/venv/bin/geno-mon >/dev/null 2>&1 || echo "geno-mon is not installed. Run: geno-tools install geno-mon"
+which ~/.geno/venv/bin/geno-mon >/dev/null 2>&1 || echo "geno-mon is not installed. Run: pip install -e ~/code-purp/geno-mon-WS/geno-mon"
 ```
 
-You have access to the geno-mon CLI at `~/.geno/venv/bin/geno-mon`. It parses agent session logs from `~/.claude/projects/` and computes observability metrics.
+You have access to the geno-mon CLI at `~/.geno/venv/bin/geno-mon`. It parses Claude Code session logs from `~/.claude/projects/` and computes observability metrics.
 
 ## Commands
 
@@ -90,7 +83,7 @@ The output includes:
 - **Commands run**: unique shell commands executed
 - **Conversation history**: user messages with assistant responses and tool usage
 
-To fork into a new session, pipe the output or copy the file content as the first message in a new agent session.
+To fork into a new session, pipe the output or copy the file content as the first message in a new Claude Code session.
 
 ### `/geno-mon tail --json`
 Same as tail but structured JSON output:
